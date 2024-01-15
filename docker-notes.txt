@@ -1,0 +1,79 @@
+- By default, the root user is the only one who can access docker engine,
+to allow other users to access docker engine, add them to docker group:
+ -- sudo usermod -aG docker $USERNAME
+
+ - sudo docker build -t IMAGE_NAME1:TAG1 -t IMAGE_NAME2:TAG2 . -> build image with multiple names and tags
+ - docker images => list all the images in your OS
+ - docker ps => list all the containers in your OS
+ - docker ps -a => list all the containers including dead ones in your OS
+
+ - docker run --name custom-image-name -d -p 8000:80 image-name
+ 	- -d for run in background
+ 	- 8000 is the exposed port
+ 	- 80 is the service port
+ 	- This command will run the image in background and expose it to public
+
+ - docker attach CONTAINER_ID OR CONTAINER_NAME => bring back the container process and run it in the foreground
+ - docker start CONTAINER_ID OR CONTAINER_NAME => start a container
+ - docker stop CONTAINER_ID OR CONTAINER_NAME => stop a container
+ - docker stop $(docker ps -aq) => stop all containers
+ - docker rm $(docker ps -aq) => remove all containers
+ - docker rmi $(docker images -a -q) => remove all images
+
+ - docker exec CONTAINER_ID OR CONTAINER_NAME BASH_SCRIPT_COMMAND => Allow you to explore the docker image and see all the directories inside it
+
+ - docker exec -it CONTAINER_ID OR CONTAINER_NAME /bin/bash => Get you inside the container process in shell interactive mode
+
+ - docker image tag IMAGE_NAME:IMAGE_CURRENT_TAG IMAGE_NAME:IMAGE_NEW_TAG -> change image tag
+
+ - docker rmi IMAGE_NAME => remove image
+
+ - docker logs CONTAINER_ID OR CONTAINER_NAME => show live logs from the container
+
+ - docker inspect IMAGE_NAME => returns metadata in JSON format
+ 	- docker-entrypoint.sh is the first executed file in docker image, that will execute
+ 	the CMD command that shown in metadata.
+
+
+ - Example of mounting the running image into directory:
+   - docker run --name vprodb -d -e MYSQL_ROOT_PASSWORD=secretpass -p 4000:3306 -v /home/ubuntu/vprodbdata:/var/lib/mysql mysql:5.7
+
+
+ - docker volume create => create a volume
+ - docker volume ls => list all volumes
+
+ - Example of mounting mysql image to a docker volume:
+   - docker run --name vprodb -d -e MYSQL_ROOT_PASSWORD=secretpass -p 4000:3306 -v mydbdata:/var/lib/mysql mysql:5.7
+    - all the data from mysql image will be mounted to mydbdata volume in the this path:
+    /var/lib/docker/volumes/mydbdata/_data
+
+ - docker volume inspect VOLUME_NAME => return a meta data about the volume
+
+
+- Docker Engine Components
+ - Docker CLI
+
+ - REST API
+
+ - Docker Daemon
+   - is a background process that manages docker objects such as images, containers, volumes and networks
+   -
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------
+# Podman commands
+- podman image ls -> list all images
+- podman build -t IMAGE_NAME:IMAGE_TAG . -> build the image
+- podman push IMAGE_NAME:IMAGE_TAG -> push the image to the repository
+- podman run -d --name CONTAINER_NAME IMAGE_NAME:IMAGE_TAG -> run a container from image
+- podman ps -> list running containers
+- podman ps -a -> list all containers including non-running ones
+- podman logs CONTAINER_NAME -> show container logs
+

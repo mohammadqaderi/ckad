@@ -1,0 +1,5 @@
+#!/bin/bash
+while IFS= read -r line; do
+    echo "creating new namespace"
+    kubectl create ns $line
+done < "$1"

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: config
+  creationTimestamp: null
+  labels:
+    run: config2
+  name: config2
+spec:
+  containers:
+  - image: nginx:alpine
+    name: config2
+    resources: {}
+    envFrom:
+      - configMapRef:
+          name: meta
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}

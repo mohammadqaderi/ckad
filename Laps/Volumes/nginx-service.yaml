@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: web
+  name: nginx-svc
+  namespace: volumes
+spec:
+  ports:
+  - port: 3000
+    protocol: TCP
+    targetPort: 80
+    nodePort: 30080
+  selector:
+    app: web
+  type: NodePort
+status:
+  loadBalancer: {}

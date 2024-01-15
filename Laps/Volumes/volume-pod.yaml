@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    app: web
+  name: volume1
+  namespace: volumes
+spec:
+  volumes:
+    - name: logs
+      hostPath:
+        path: /mnt/vpath
+  containers:
+  - image: nginx:alpine
+    name: volume1
+    volumeMounts:
+      - mountPath: /app
+        name: logs
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}

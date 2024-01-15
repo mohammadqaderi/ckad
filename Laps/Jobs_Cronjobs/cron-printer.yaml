@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  creationTimestamp: null
+  name: cron-printer
+  namespace: jobs-cronjobs
+spec:
+  schedule: '* * * * *'
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+      name: cron-printer
+    spec:
+      backoffLimit: 25
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          volumes:
+            - name: calculations
+              hostPath:
+                path: /mnt/calculations
+          containers:
+          - image: registry.k8s.io/busybox
+            volumeMounts:
+              - mountPath: /app
+                name: calculations
+            name: cron-printer
+            resources: {}
+            command: [ "/bin/sh" ]
+            args: [ "-c", "for run in $(seq 1 10); do echo hello $run > /app/$run.txt; done" ]
+          restartPolicy: OnFailure
+status: {}

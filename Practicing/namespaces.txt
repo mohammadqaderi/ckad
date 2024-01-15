@@ -1,0 +1,11 @@
+earth
+jupiter
+mars
+mercury
+moon
+neptune
+pluto
+saturn
+shell-intern
+sun
+venus

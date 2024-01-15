@@ -1,0 +1,654 @@
+- Environment
+Always export the following environment variables before running the kubernetes labs
+alias k=kubectl
+
+export do="--dry-run=client -o yaml"    # k create deploy nginx --image=nginx $do
+
+export now="--force --grace-period 0"   # k delete pod x $now
+
+--------------------------------------------------------------------------------
+- Security Contexts
+ -> capabilities are specified under container level only
+  securityContext:
+    runAsUser: 3000
+  capabilities:
+    add: ["MAC_ADMIN"]
+-------------------------------------------------------------------------
+
+- Readiness & Liveness Probe
+
+ -> initialDelaySeconds is the application warming up period
+
+ -> if you asked to make the container reliable at a specific port without mentioning the endpoint
+ then use tcpSocket option under liveness or readiness probe config
+
+-------------------------------------------------------------------------
+
+- Service Account
+ -> read the kubernetes enhancements section because they've made some changes regarding the creation of
+ the service account and custom tokens that have expiry date
+
+ -> service accounts are meant to be associated with machines that want to communicate with kube-api
+ server in order to do some operations like load pods, connection with services etc..
+
+ -> use RBAC in order to set some permissions to service accounts in order to have access
+ accessing the kube-api server
+
+ -> automountServiceAccountToken: false -> using this property will disable using the default
+ service account token and mount it in the pod or any other workload
+
+-------------------------------------------------------------------------
+
+- Volumes
+
+ -> Ephemeral (used for temporary data or applications that do not require data persistency)
+  - EmptyDir
+    -> Created when a pod is scheduled to a worker node.
+    -> When a Pod dies, crashes, or is removed from a Node, the data in the emptyDir volume is deleted and lost.
+    -> This type of volume is suitable for temporary data storage
+
+  - HostPath
+    -> is a durable volume type that mounts a directory from the host Node’s filesystem into a Pod.
+    -> The file in the volume remains intact even if the Pod crashes, is terminated or is deleted.
+    -> It is important that the directory and the Pod are created or scheduled on the same Node
+    -> The path property under hostPath is the directory location in the host (worker node)
+    -> Example: host path directory is /tmp/app-logs, pod path mounting directory is /app
+
+-------------------------------------------------------------------------
+
+- Admission Controllers
+ -> is a component responsible for intercepting and validating requests to the Kubernetes API server
+  before they are persisted or executed.
+ -> It acts as a gatekeeper, enforcing custom admission policies and ensuring that
+  incoming requests meet certain criteria or conform to specific rules.
+ -> They can validate and mutate incoming requests, ensuring that resources created or modified adhere
+  to specific requirements, such as security policies, resource quotas, naming conventions,
+  or custom business rules.
+ -> There are two types of Admission Controllers in Kubernetes:
+   - Validating Admission Controllers
+     -> validate incoming requests and determine whether they should be allowed or rejected.
+     -> They can examine the object being created or modified and make decisions based on certain criteria.
+     -> If a request is deemed invalid, it is rejected, and an error message is returned to the client.
+     -> Built-in validation admission controllers:
+       - NamespaceLifecycle: Ensures that namespaces are created or modified following specific lifecycle
+         rules.
+       - quota: Enforces resource usage limits and prevents resource exhaustion.
+       - PodSecurityPolicy: Validates the security context of pods and enforces security policies.
+       - DefaultStorageClass: Ensures that the default storage class is properly set.
+
+   - Mutating Admission Controllers
+     -> have the ability to modify incoming requests before they are persisted or executed.
+     -> They can mutate the object being created or modified to enforce defaults, inject additional configurations,
+      or apply transformations.
+     -> Built-in mutating admission controllers
+       - NamespaceAutoProvisioning: Automatically creates a namespace if it doesn't exist.
+       - LimitRanger: Sets default resource limits on pods if not specified explicitly.
+       - PodPreset: Injects additional configurations or environment variables into pods.
+       - ServiceAccount: Automatically assigns a service account to a pod if not specified.
+
+ -------------------------------------------------------------------------
+
+Deployments
+  -> To update deployment image use the following command:
+    kubectl set image deployment/DEPLOYMENT_NAME IMAGE_NAME=IMAGE_VALUE
+    Ex: kubectl set image deployment/nginx-deployment nginx=nginx:1.161
+
+  -> To see the status of each deployment revision use the following command:
+   kubectl rollout history deployment DEPLOYMENT_NAME --revision=REVISION_NUMBER
+   EX: kubectl rollout history deployment nginx --revision=2
+
+  -> To rollback/rollout to a previous revision or specific revision use the following command:
+   kubectl rollout undo deployment DEPLOYMENT_NAME
+   Ex-1: kubectl rollout undo deployment nginx
+   Ex-2: kubectl rollout undo deployment nginx --to-revision=2
+
+  -> To scale deployment replicas use the following command:
+   kubectl scale deployment DEPLOYMENT_NAME --replicas=REPLICAS_NUMBER
+   EX: kubectl scale deployment nginx --replicas=5
+
+  -> To expose a deployment in a specific port, use the following command:
+   kubectl expose deployment DEPLOYMENT_NAME --target-port=TARGET_PORT --port=PORT --type=SERVICE_TYPE
+   Ex: kubectl expose deployment nginx --target-port=80 --port=80 --type=NodePort
+
+  -> to add a deployment strategy use this example:
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 2
+------------------------------------------------------------------------------------------------
+
+- Services
+
+ - To test pod connectivity, use the following command:
+  kubectl run POD_NAME --restart=Never --rm --image=IMAGE_NAME -i -- curl http://SERVICE_NAME.NAMESPACE_NAME:PORT_NUMBER
+  -> The aim from this pod is to check the response from the exposed pod and log back the response
+  then it'll be deleted after that.
+
+
+------------------------------------------------------------------------------------------------
+
+- Persistent
+
+ - (The Difference Between PVs and PVCs in Kubernetes)
+ - PVs and PVCs differ in provisioning, functionalities, and the person responsible for creating them,
+     specifically:
+  -> PVs are created by the cluster administrator or dynamically by Kubernetes,
+     whereas users/developers create PVCs.
+  -> PVs are cluster resources provisioned by an administrator, whereas PVCs are a user’s request for
+     storage and resources.
+  -> PVCs consume PVs resources, but not vice versa.
+  -> A PV is similar to a node in terms of cluster resources,
+     while a PVC is like a Pod in the context of cluster resource consumption.
+
+
+ - (Difference between Volumes and PersistentVolumes)
+ - Volumes and PersistentVolumes differ in the following ways:
+
+   -> A Volume separates storage from a container but binds it to a Pod,
+      while PVs separate storage from a Pod.
+   -> The lifecycle of a Volume is dependent on the Pod using it, while the lifecycle of a PV is not.
+   -> A Volume enables safe container restart and allows sharing of data across containers,
+      whereas a PV enables safe Pod termination or restart.
+   -> A separate manifest YAML file is needed to create a PV, but not required for a volume.
+
+- Persistent Volume Reclaim Policies:
+  -> Retain: This is the default reclaim policy. It is a process that allows manual deletion
+     of the PV by the Administrator. When a PVC is deleted, the PV remains intact, including its data,
+     thus making it unavailable for use by another claim.
+     However, the Administrator can still manually reclaim the PersistentVolume.
+  -> Delete: When the reclaim policy is set to delete, the PV deletes automatically when
+     the PVC is deleted and makes the space available. It is important to note that the dynamically
+     provisioned PVs inherit the reclaim policy of their StorageClass, which defaults to Delete.
+  -> Recycle: This type of reclaim policy will scrub the data in the PV and make it available
+     for another claim.
+
+  accessModes: This property defines how a PV should be mounted on the host.
+  The value can be ReadWriteOnce, ReadOnlyMany, or ReadWriteMany.
+
+  ReadWriteOnce: You can mount the PV as read-write by a single node.
+  ReadOnlyMany: You can mount the PV as read-only by multiple nodes.
+  ReadWriteMany: You can mount the PV as read-write by multiple nodes.
+
+ -> storageClassName can be added to the pv and pvc at the same time
+
+------------------------------------------------------------------------------------------------
+
+Labels and annotations
+
+ -> You can label a kubernetes resource and filter the data by using the -l option
+  Formula: kubectl label RESOURCE RESOURCE_NAME -l LABEL_NAME=LABEL_VALUE LABEL_NAME=LABEL_VALUE
+  Ex: kubectl label pod -l app=web secure=true
+
+
+ -> You can annotate a kubernetes resource and filter the data by using the -l option
+  Formula: kubectl annotate RESOURCE RESOURCE_NAME -l LABEL_NAME=LABEL_VALUE LABEL_NAME=LABEL_VALUE
+  Ex: kubectl annotate pod -l app=web a8r.io/owner=@sally
+
+------------------------------------------------------------------------------------------------
+
+Canary, Blue and Green Deployments
+
+
+ - Rolling Update
+  -> it's the default deployment strategy, where the newer version is deployed one by one and that
+   keen to avoid application downtime.
+
+ - Blue Green Deployment Strategy
+  -> When you have two deployment versions (v1 and v2)
+  -> All the traffic are goes to the v1 deployment
+  -> Once all the tests is passed in v1, we change the label selector in service to route
+     the traffic to the v2 deployment
+
+ - Canary Deployment Strategy
+  -> When most of the traffic is routed to the v1 deployment (older version) like 90%
+  -> Some percent of the traffic is routed to the v2 deployment (newer version) like 10%
+  -> Once all the tests is passed in v1, we upgrade the original deployment with the newer version of the
+  application like using rolling update strategy, then we get rid of the canary deployment
+  -> to apply canary strategy, you've to create a shared label between the old and new deployments and that label
+  will be added to the selector label in the service
+  -> to shift most of the traffic to the v1 deployment, increase the number of replicas to be higher than
+  the v2 deployment to value like 5 pods, and the replicas for the v2 deployment will be 1 pod
+  -> You'll have some limitations in this approach to control the number of traffic for each deployment,
+  so, you can't guarantee that 1% of the traffic will go to the v2 deployment and the rest of the traffic will
+  be routed to v1 deployment.
+  -> Services like Service Mesh Istio have the solution to manage the exact percentage for each deployment
+
+
+------------------------------------------------------------------------------------------------
+
+Network Policy
+
+ - Network Policy is a kubernetes object that defined to set policy rule for a specific resource
+    in order to allow/prevent access to it
+   -> Ex: Only allow ingress access from the API Server Pod to the Database Pod on port 3306
+
+
+ - Get all network policies: kubectl get netpol
+ - How to apply network policy?
+   -> First we add a label to the pod definition under labels like the following:
+    labels:
+      role: db
+
+   -> Second, we add property called podSelector to the network policy definition:
+      podSelector:
+       matchLabels:
+         role: db
+
+  - Here's a complete example of network policy definition
+
+  apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: db-policy
+  spec:
+    podSelector:
+      matchLabels:
+        role: api-server
+    policyTypes:
+      - Ingress
+    ingress:
+      - from:
+        - podSelector:
+            matchLabels:
+              role: db
+      ports:
+        - protocol: TCP
+          port: 3306
+
+- To allow only outgoing traffic from specific namespace to another namespace, use the following Example template:
+   apiVersion: networking.k8s.io/v1
+   kind: NetworkPolicy
+   metadata:
+     name: np
+     namespace: space1
+   spec:
+     podSelector: {}
+     policyTypes:
+     - Egress
+     egress:
+     - ports:
+       - port: 53
+         protocol: TCP
+       - port: 53
+         protocol: UDP
+     - to:
+       - namespaceSelector:
+           matchLabels:
+             kubernetes.io/metadata.name: space2
+
+
+
+-> if you specified only Ingress and Egress in policyTypes, then all traffic will be blocked for that pod.
+
+-> in case another pod in different namespace called staging, and it wants to connect to the database pod \
+in which is in different namespace called prod, then we have to add the following property in network policy definition:
+        - namespaceSelector:
+            matchLabels:
+              name: staging
+ -> Note: in case the namespaceSelector was set, then all pods under this namespace can connect to the database pod
+ and this is dangerous, so make sure to add the podSelector property in network policy definition.
+
+
+-> In case you want to allow all ingress/egress traffic, you can use the following example:
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  podSelector: {}
+  egress:
+  - {}
+  policyTypes:
+  - Egress
+
+
+-> In case you want to deny all ingress/egress traffic, you can use the following example:
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+
+-> If you want to allow access to a set of ip address, you've to set the ipBlock property in ingress rule:
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 172.17.0.0/16
+            except:
+              - 172.17.1.0/24
+
+------------------------------------------------------------------------------------------------
+
+Taints and tolerations
+
+  - We use Taints and Toleration in order to specify the scheduling process in kubernetes
+  - Scenario:
+   -> we want to taint a specific Node to contain only web-dashboard pods
+   -> in this case, the scheduler will look to all tolerant pods with tolerant name "web-dashboard" and
+   schedule them to that node
+
+  - To taint a node:
+   kubectl taint nodes NODE_NAME key=value:taint-effect
+   Ex: kubectl taint nodes node1 app=blue:NoSchedule
+
+  - taint-effect have three types:
+   -> NoSchedule: the scheduler will not schedule the pod on the tainted node
+   -> PreferNoSchedule: The scheduler will try to avoid scheduling the pod on the tainted node but that
+     is not guaranteed
+   -> NoExecute: No pod will be scheduled on the tainted node and the current pods inside the node will
+    be evicted if they do not tolerate the taint.
+
+
+  - To tolerate a pod to a specific node use the following example:
+  -> under spec, add the following block:
+  spec:
+    tolerations:
+    - key: "key1"
+      operator: "Equal"
+      value: "value1"
+      effect: "NoSchedule"
+
+  - Note: Master Node will be tainted by default to NoSchedule because it's only responsible to administrate
+   the Kubernetes Software not the application workloads
+   -> You can run the following command to view the taint of the master node:
+    - kubectl describe node kubemaster | grep Taint
+
+
+  - To remove a taint from a specific node use the following example:
+   -> kubectl taint node controlplane node-role.kubernetes.io/control-plane:NoSchedule-
+   - controlplane is the name of node
+   - node-role.kubernetes.io/control-plane:NoSchedule is the node taint name
+      - you can get it using the following command;
+       kubectl describe node NODE_NAME | grep Taint
+
+------------------------------------------------------------------------------------------------
+
+Node Selector
+
+ - Node Selector is a process of scheduling a set of pods to a specific node
+
+ - Firstly, we label a node with specific information:
+ -> Formula: kubectl label node NODE_NAME LABEL_KEY=LABEL_VALUE
+ -> Ex: kubectl label node node1 size=Large
+
+ - Second, we add a nodeSelector to the pod definition to be scheduled to that nodeL
+ Ex:
+ spec:
+   nodeSelector:
+     size: Large
+
+
+ - Node Selector have some limitation related to complex scenarios that require more extra requirements like:
+  - Place the pod where the node is medium or larger
+  - Place the pod where the node has a specific amount of RAM Size
+  - Etc...
+  - To solve this, we'll use a concept called "Node Affinity" in the next section
+
+------------------------------------------------------------------------------------------------
+
+Node Affinity
+
+ - The primary purpose of node affinity is to ensure that pods are hosted on particular nodes
+
+ - We've to add the affinity metadata to the pod definition in order to match the node requirements
+ Ex-1:
+ spec:
+   affinity:
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+         - matchExpressions:
+           - key: size
+             operator: cExists
+
+ Ex-2:
+ spec:
+   affinity:
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+         - matchExpressions:
+           - key: topology.kubernetes.io/zone
+             operator: In
+             values:
+             - antarctica-east1
+             - antarctica-west1
+
+ - The operator value has multiple options like "In" "NotIn" "Exists" and so on..
+  -> Check the documentation to see full list of operators
+
+ - There are two types of node affinity:
+  -> requiredDuringSchedulingIgnoredDuringExecution: The scheduler can't schedule the Pod unless the rule
+     is met.
+  -> This functions like nodeSelector, but with a more expressive syntax.
+
+  -> preferredDuringSchedulingIgnoredDuringExecution: The scheduler tries to find a node that meets the
+     rule.
+     - If a matching node is not available, the scheduler still schedules the Pod.
+
+ - You can add the both types under the pod definition and that's called type weighting
+
+
+ - use requiredDuringSchedulingIgnoredDuringExecution when the node affinity rules are crucial, so:
+  - in case the pod does not have a node affinity terms, it'll not be scheduled
+
+ - use preferredDuringSchedulingIgnoredDuringExecution when the node affinity is good to have,
+   but it's not required
+
+------------------------------------------------------------------------------------------------
+
+Ingress
+
+ - FAQ - What is the rewrite-target option?
+  -> Check the following articles to know more:
+   - https://kubernetes.github.io/ingress-nginx/examples/
+   - https://www.udemy.com/course/certified-kubernetes-application-developer/learn/lecture/16716434#overview
+   - https://kubernetes.github.io/ingress-nginx/examples/rewrite/
+
+ - targetPort is the exposed port from the application
+  -> by default it's 80
+
+ - serverPort is the exposed port from the application associated service
+
+ - to expose ingress-controller deployment to a specific service use the following imperative command:
+  kubectl expose deploy ingress-controller -n ingress-space --name ingress --port 80 --targetPort 80
+   --type NodePort
+  -> You can't specify nodePort in imperative command, edit the service
+  nodePort to be something like 30080
+
+ - Check the ingress-controller file and ingress-resource file in order to create the
+  ingress controller in a specific namespace.
+
+------------------------------------------------------------------------------------------------
+
+Kube Config
+
+ - you'll be asked to correct the kube config file by:
+  -> edit the client key path
+  -> edit the certificate key path
+  -> add new context (set-context user@cluster)
+  -> change current context (use-context context name)
+
+------------------------------------------------------------------------------------------------
+
+API Versions and deprecations
+
+ - v1 is the GA (Generally available stable version)
+ - v1alpha1 (Alpha)
+ - v1beta1 (Beta)
+
+ -> Alpha is when an API is first developed and merged to the Kubernetes code base and becomes part
+    of the kubernetes release for the very first time
+  - Alpha api group is not enabled by default, so for example, if you want to create any object under alpha version
+    this will be rejected
+
+ -> Beta is when Alpha is tested end-to-end, and it's enabled by default
+  - but it's not Generally available and not stable yet
+
+ -> API group can support multiple versions at the same time
+  - Ex: autoscaling api group may have v1, v1alpha1 and v1beta1 at the same time
+  - You can create objects from different versions like v1, v1alpha1 and v1beta1
+  - but when you query that object it'll only return the objects under the preferred version
+  - (preferred/storage) version ensures that the objects under the most stable version will be stored
+    in etcd database
+
+ -> To enable api group, add it in the kube-apiserver configuration file:
+  --runtime-config=batch/v2alpha1\\
+  Example: (add this line to enable authorization v1alpha1 api group)
+     - --runtime-config=rbac.authorization.k8s.io/v1alpha1
+
+
+
+ - API Deprecation Policy Roles
+
+ -> Rule-1
+  - API elements may only be removed by incrementing the version of the API group
+
+ -> Rule-2
+  - API Objects must be able to round-trip between API versions in a given release without information
+    loss, except whole REST resources that do not exist in some versions
+  - v1alpha2 must override the v1alpha1 with same information
+
+
+ -> Rule-4a:
+  - Other than the most recent API versions in each track, older API versions must be supported after
+    their announced deprecation for a duration of no less than:
+   * GA: 12 months or 3 releases (whichever is longer)
+   * Beta: 9 months or 3 releases (whichever is longer)
+   * Alpha: 0 releases
+
+ -> Rule-4b:
+  - The "preferred" API version and the "storage version" for a given group may not advance until after
+    a release has been made that supports both the new version and the previous version
+  - in first new 3 releases, we'll have v1, v1beta1 and v1beta2, v1beta1 and v1beta2 will be deprecated,
+    and once a release is published after all of those 3 releases, the v1beta1 version will be removed
+    and after new 3 releases the v1beta2 version will be removed, and you'll have only v1 version
+  - All of this deprecation and removing is based on this rule (Beta: 9 months or 3 releases
+    (whichever is longer)
+
+ -> Rule-3:
+  - An API version is a given track may not be deprecated until a new API version at least as
+    stable is released.
+  - So based on Rule-4b example, if we lunch v2alpha1 version along with v1 version, then v1 will not be
+  deprecated until v1alpha1 is stable
+
+
+ -> kubectl convert command
+  - to convert an old version to a new version in your yaml files
+  - to use this command plugin, download it from here: https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/#install-kubectl-convert-plugin
+  - Ex: kubectl convert -f nginx.yaml --output-version apps/v1
+
+ - if we've a kubernetes cluster with this version 1.22.2, then:
+  - 2 is the patch version
+  - 22 is the minor version
+  - 1 is the major version
+
+ - to identify the api group of kubernetes resource run the following command:
+  -> kubectl explain OBJECT_NAME
+
+ - to identify the preferred version of kubernetes api group, do the following steps:
+  -> kubectl proxy 8001&
+  -> curl localhost:8001/apis/API_GROUP_NAME
+spec:
+  podSelector:
+    matchLabels:
+      name: secure-pod
+  policyTypes:
+  - Ingress
+  ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            name: webapp-color
+      ports:
+        - protocol: TCP
+          port: 80
+
+----------------------------------------------------------------
+Helm
+- Helm Commands Cheat sheet:
+
+-> helm search REPO_NAME CHART_NAME
+ - Search for a chart in a specific repository
+ Ex: helm search hub wordpress
+ Ex: helm search bitnami nginx
+ Ex: helm search repo nginx (Search reads through all the repositories configured on the system, and looks for matches)
+
+-> helm repo add REPO_NAME REPO_URL
+ - add repository into your local machine
+ Ex: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+-> helm repo list
+ - list all repositories in your local machine
+
+-> helm install RELEASE_NAME CHART_NAME
+ - install a chart from a specific repository and add it into your local machine releases.
+ - each installation is completely independent of each other.
+ Ex: helm install wordpress1 bitnami/wordpress
+ Ex: helm install wordpress2 bitnami/wordpress
+ Ex: helm install wordpress3 bitnami/wordpress
+
+-> helm uninstall RELEASE_NAME
+ - uninstall/delete a release
+
+-> helm -n NAMESPACE uninstall RELEASE_NAME
+ - uninstall/delete a release from a specific namespace
+
+-> helm list or (helm ls -a)
+ - list all the releases in your machine
+
+- You can use pull and install method in order to use the chart as Iac in your machine
+ -> helm pull --untar bitnami/wordpress
+ -> helm install wordpress4 ./wordpress
+
+- helm upgrade RELEASE_NAME CHART_NAME
+
+- helm show values bitnami/apache | yq e
+  -> parse chart values into yaml and show with colors
+
+- helm install RELEASE_NAME CHART_NAME --set replicaCount=2
+  -> install release with custom values (ex: replicasCount)
+
+
+
+
+----------------------------------------------------------------
+Labs Notes
+- if you asked to schedule a pod to a controlplane node add this to the pod definition:
+nodeSelector:
+    kubernetes.io/hostname: controlplane
+
+- if you asked to add a check to restart the container then you've to add a liveness probe in the
+pod definition
+      livenessProbe:
+        exec:
+          command:
+            - ls
+            - /var/www/html/file_check
+        initialDelaySeconds: 10 ## if they asked you to that the check should start after a delay of x-seconds
+        periodSeconds: 60 ## if they asked you that the check should run every x-seconds.
+
+- if they asked you that if the task is not completed within a period of time
+then the job should fail and pods should be terminated add this line to the job spec
+  activeDeadlineSeconds: x-seconds
+
+
+- if they asked you to create configmap from specific file path with a specific name, use the
+following command:
+ kubectl create configmap --from-file=index.html=/path

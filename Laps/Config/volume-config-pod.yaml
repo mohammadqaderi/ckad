@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: config
+  creationTimestamp: null
+  labels:
+    run: config3
+  name: config3
+spec:
+  volumes:
+    - name: information
+      configMap:
+        name: information
+  containers:
+  - image: httpd:alpine
+    name: config3
+    resources: {}
+    volumeMounts:
+      - mountPath: /conf
+        readOnly: true
+        name: information
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}

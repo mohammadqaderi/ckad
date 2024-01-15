@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: init
+  name: init
+  namespace: init-sidecar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: init
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: init
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+      initContainers:
+        - name: print
+          image: busybox:1.28
+          command: ['sh', '-c', 'echo The app is running! && sleep 5']
+status: {}

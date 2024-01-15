@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: "readiness-liveness"
+  name: readiness-pod
+spec:
+  containers:
+    - name: readiness-pod
+      image: registry.k8s.io/busybox
+      args:
+        - /bin/sh
+        - -c
+        - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600
+      livenessProbe:
+        exec:
+          command:
+            - cat /healthy
+        initialDelaySeconds: 10
+        periodSeconds: 10

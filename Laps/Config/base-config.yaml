@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: meta
+  namespace: config
+data:
+  app: "stg"
+  env: "dev"

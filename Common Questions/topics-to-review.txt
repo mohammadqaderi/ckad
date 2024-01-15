@@ -1,0 +1,17 @@
+- Helm
+
+- Ingress
+
+- Service Account
+
+- Network Policy
+
+- Volume Mounts
+
+- StatefulSet
+
+- Mounting ConfigMap or Secret to a pod as volume, env, etc...
+
+- Volume Mounts (Understand the concepts of pod mounting)
+
+-

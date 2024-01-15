@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: exposed-dep1
+  name: exposed-dep1
+  namespace: exposing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exposed-dep1
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: exposed-dep1
+    spec:
+      containers:
+      - image: nginx:latest
+        name: nginx
+        resources: {}
+status: {}

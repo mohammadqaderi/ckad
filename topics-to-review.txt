@@ -1,0 +1,52 @@
+- Config Maps and secret connection with deployment or pods
+
+- Admission Controllers
+
+- Readiness/Liveness Probes
+
+- Volume Binding
+
+- Security Context
+
+- Service Accounts
+
+- Secret, Secret-Volume, Secret-Env
+
+- Review Jobs + CronJobs
+
+- Deployment Rollouts
+
+- Exposing Pods, Deployments etc...
+
+- Testing Pods connectivity using temporarily pods
+
+- Persistent Volumes, Storage Classes, Persistent Volume Claims, Reclaim Policies ...
+
+- Init Containers, Sidecar Containers
+
+- Labels and Annotations
+
+- Canary, Blue/Green Deployments
+
+- Network Policies
+
+- Taints & Tolerations
+
+- Node Affinity
+
+- Node Selectors
+
+- Ingress
+
+- Kube Config
+
+- API Versions / API Deprecations
+
+- Role Based Access Controls
+
+- Resource
+
+- Review helm commands
+
+- More practice with jsonpath
+

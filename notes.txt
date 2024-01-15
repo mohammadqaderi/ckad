@@ -1,0 +1,145 @@
+- To sort pods by creation date:
+  kubectl get po --sort-by='{.metadata.creationTimestamp}'
+
+
+- Docker Important Notes:
+ -> Steps to push image to dockerhub registry:
+  - Pull the image from cloud registry or build it from your local directory:
+    docker build -t USERNAME/APP_NAME .
+      OR
+    docker pull IMAGE_NAME
+  - Tag the image with your dockerhub registry name:
+    docker tag IMAGE_NAME USERNAME/APP_NAME:TAG_NAME
+  - Push the image to your docker registry:
+    docker push USERNAME/APP_NAME:TAG_NAME
+
+- To mount all keys from configMap as a volume to the pod definition, add the following under pod spec:
+  volumes:
+  - name: VOLUME_NAME
+    configMap:
+      name: KEY_NAME
+
+- To allow only outgoing traffic from specific namespace to another namespace, use the following Example template:
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: np
+  namespace: space1
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - ports:
+    - port: 53
+      protocol: TCP
+    - port: 53
+      protocol: UDP
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: space2
+
+
+- Use the following command to get the installed K8S server version (Major.Minor.Patch):
+   kubectl version --short
+
+- create a secret and inject it to a pod
+
+- create a storage class with provisioner
+
+- persistent volume and persistent volume claims
+
+- build docker images and push them to the registry using docker and podman
+
+- add security context to container level or pod level
+ - check all security context options
+
+- deployment rollout to a valid version (using rollout undo command)
+
+- readiness probe and liveness probe with custom configuration
+
+- service account creation and check their token
+
+- helm commands
+ - search for chart
+ - upgrade a chart
+ - uninstall a chart
+ - show chart values
+
+- Creating jobs and cronjobs
+
+- use --from-file option when you want to create a configmap from a local file
+
+- to check pod response using curl request
+ -> first: get the pods in wide format
+    kubectl get pods -o w -> this will return the cluster ip for that pod
+ -> second: create a temporary pod to send a curl request for that ip
+
+
+
+- Instead of deleting a replica set pods one by one, we can delete all of replica-set pods using their shared
+label
+Ex: kubectl delete pod -l KEY=VALUE
+
+- To expose a deployment, we can use the following command:
+ kubectl export deployment DEPLOYMENT_NAME= --port PORT_NUMBER --name SERVER_NAME
+
+- To run pod as a root user, add the securityContext property to the spec under pod definition
+Ex:
+ securityContext:
+   runAsUser: 0
+
+- To add capabilities to the pod user, add the securityContext property to the containers definition in pod sepc
+Ex:
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    securityContext:
+      capabilities:
+        add: ["SYS_TIME"]
+
+
+- To label a specific node, use the following command:
+ kubectl label node NODE_NAME KEY=VALUE
+
+- To create ingress using imperative command use the following example:
+ kubectl create ingress video-ingress --rule="google.com/video*=my-video-service:8080" --dry-run=client -oyaml > video-ingress.yaml
+
+- You can set the persistentVolumeReclaimPolicy to the persistent volume spec in order to specify the
+reclaim policy
+
+- to create a pod and expose the traffic on a specific port, use the following command:
+  kubectl run POD_NAME --image=IMAGE_NAME --port=PORT_NUMBER
+
+- to create a pod with that run a specific command, use the following example:
+  kubectl run POD_NAME --image=IMAGE_NAME --command -- COMMAND
+
+- to change a pod image, use the following command:
+  kubectl set image POD_NAME IMAGE_NAME=_IMAGE_VALUE
+
+- Example of creating a pod that execute specific command and removed after that
+  kubectl run busybox --image=busybox -it --rm --restart=Never -- /bin/sh -c 'echo hello world'
+
+- Example of creating a temporary pod that check a service connection on a specific port:
+  kubectl run TMP_POD_NAME --restart=Never --rm --image=IMAGE_NAME -i -- curl http://SERVICE_NAME:PORT
+Ex: kubectl run tmp --restart=Never --rm --image=nginx:alpine -i -- curl http://project-plt-6cc-svc.pluto:3333
+    -> in the service name we specified the service.namespace (project-plt-6cc-svc.pluto), because the temporary
+    pod will connect to that service from the default namespace
+
+- label pods in multiple labels with a new label
+ k label pod -l "type in (worker,runner)" protected=true
+
+
+- if you asked to add a service account to a pod use this key in the pod spec template:
+  serviceAccountName
+
+- Make key tree of ConfigMap trauerweide available as environment variable TREE1
+env:
+ - name: TREE1
+   valueFrom:
+     configMapKeyRef:
+       name: trauerweide
+       key: tree
+
+
